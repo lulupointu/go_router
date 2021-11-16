@@ -7,9 +7,10 @@ import 'package:flutter/widgets.dart';
 import 'src/go_router.dart';
 
 export 'src/custom_transition_page.dart';
-export 'src/go_route.dart';
 export 'src/go_router.dart';
 export 'src/go_router_state.dart';
+export 'src/go_routes/go_route.dart';
+export 'src/go_routes/go_tabbed_route/go_tabbed_route.dart';
 export 'src/typedefs.dart' show GoRouterPageBuilder, GoRouterRedirect;
 export 'src/url_path_strategy.dart';
 

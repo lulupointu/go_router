@@ -1,7 +1,8 @@
 import 'package:flutter/foundation.dart';
+import 'package:go_router/src/go_routes/go_route_interface.dart';
 import 'package:path_to_regexp/path_to_regexp.dart' as p2re;
 
-import 'go_route.dart';
+import 'go_routes/go_route.dart';
 import 'go_router_delegate.dart';
 
 /// Each GoRouteMatch instance represents an instance of a GoRoute for a
@@ -31,7 +32,7 @@ class GoRouteMatch {
 
   // ignore: public_member_api_docs
   factory GoRouteMatch.matchNamed({
-    required GoRoute route,
+    required GoRouteInterface route,
     required String name, // e.g. person
     required String fullpath, // e.g. /family/:fid/person/:pid
     required Map<String, String> params, // e.g. {'fid': 'f2', 'pid': 'p1'}
@@ -75,7 +76,7 @@ class GoRouteMatch {
 
   // ignore: public_member_api_docs
   static GoRouteMatch? match({
-    required GoRoute route,
+    required GoRouteInterface route,
     required String restLoc, // e.g. person/p1
     required String parentSubloc, // e.g. /family/f2
     required String path, // e.g. person/:pid
@@ -102,7 +103,7 @@ class GoRouteMatch {
   }
 
   /// The matched route.
-  final GoRoute route;
+  final GoRouteInterface route;
 
   /// Matched sub-location.
   final String subloc; // e.g. /family/f2

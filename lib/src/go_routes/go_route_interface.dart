@@ -2,20 +2,19 @@ import 'package:collection/collection.dart';
 import 'package:flutter/widgets.dart';
 import 'package:path_to_regexp/path_to_regexp.dart' as p2re;
 
-import 'custom_transition_page.dart';
-import 'go_router_state.dart';
-import 'typedefs.dart';
+import '../custom_transition_page.dart';
+import '../go_router_state.dart';
+import '../typedefs.dart';
 
 /// A declarative mapping between a route path and a page builder.
-class GoRoute {
+abstract class GoRouteInterface {
   /// Default constructor used to create mapping between a
   /// route path and a page builder.
-  GoRoute({
+  GoRouteInterface({
     required this.path,
     this.name,
-    this.pageBuilder = _builder,
-    this.routes = const [],
     this.redirect = _redirect,
+    this.routes = const [],
   }) {
     if (path.isEmpty) {
       throw Exception('GoRoute path cannot be empty');
@@ -47,10 +46,8 @@ class GoRoute {
     // check sub-routes
     for (final route in routes) {
       // check paths
-      if (route.path != '/' &&
-          (route.path.startsWith('/') || route.path.endsWith('/'))) {
-        throw Exception(
-            'sub-route path may not start or end with /: ${route.path}');
+      if (route.path != '/' && (route.path.startsWith('/') || route.path.endsWith('/'))) {
+        throw Exception('sub-route path may not start or end with /: ${route.path}');
       }
     }
   }
@@ -76,26 +73,10 @@ class GoRoute {
   /// ```
   final String path;
 
-  /// A page builder for this route.
-  ///
-  /// Typically a MaterialPage, as in:
-  /// ```
-  /// GoRoute(
-  ///   path: '/',
-  ///   pageBuilder: (context, state) => MaterialPage<void>(
-  ///   key: state.pageKey,
-  ///   child: HomePage(families: Families.data),
-  /// ),
-  /// ```
-  ///
-  /// You can also use CupertinoPage, and for a custom page builder to use
-  /// custom page transitions, you can use [CustomTransitionPage].
-  final GoRouterPageBuilder pageBuilder;
-
   /// A list of sub go routes for this route.
   ///
-  /// To create sub-routes for a route, provide them as a [GoRoute] list
-  /// with the sub routes.
+  /// To create sub-routes for a route, provide them as a [GoRouteInterface]
+  /// list with the sub routes.
   ///
   /// For example these routes:
   /// ```
@@ -145,7 +126,7 @@ class GoRoute {
   ///   errorPageBuilder: ...
   /// );
   ///
-  final List<GoRoute> routes;
+  final List<GoRouteInterface> routes;
 
   /// An optional redirect function for this route.
   ///
@@ -174,11 +155,14 @@ class GoRoute {
   Match? matchPatternAsPrefix(String loc) => _pathRE.matchAsPrefix(loc);
 
   /// Extract the path parameters from a match.
-  Map<String, String> extractPathParams(Match match) =>
-      p2re.extract(_pathParams, match);
+  Map<String, String> extractPathParams(Match match) => p2re.extract(_pathParams, match);
+
+  /// Returns the stack of pages which should be used in the main navigator
+  List<Page> pageStackBuilder(
+      BuildContext context,
+      GoRouterState state,
+      List<Page> subRoutePageStack,
+      );
 
   static String? _redirect(GoRouterState state) => null;
-
-  static Page<dynamic> _builder(BuildContext context, GoRouterState state) =>
-      throw Exception('GoRoute builder parameter not set');
 }

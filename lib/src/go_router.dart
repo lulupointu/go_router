@@ -1,11 +1,11 @@
 import 'package:flutter/widgets.dart';
+import 'package:go_router/src/go_routes/go_route_interface.dart';
 
-import 'go_route.dart';
+import 'go_routes/go_route.dart';
 import 'go_route_information_parser.dart';
 import 'go_router_delegate.dart';
 import 'inherited_go_router.dart';
-import 'path_strategy_nonweb.dart'
-    if (dart.library.html) 'path_strategy_web.dart';
+import 'path_strategy_nonweb.dart' if (dart.library.html) 'path_strategy_web.dart';
 import 'typedefs.dart';
 import 'url_path_strategy.dart';
 
@@ -17,7 +17,7 @@ class GoRouter extends ChangeNotifier with NavigatorObserver {
   /// Default constructor to configure a GoRouter with a routes builder
   /// and an error page builder.
   GoRouter({
-    required List<GoRoute> routes,
+    required List<GoRouteInterface> routes,
     required GoRouterPageBuilder errorPageBuilder,
     GoRouterRedirect? redirect,
     Listenable? refreshListenable,
@@ -45,7 +45,9 @@ class GoRouter extends ChangeNotifier with NavigatorObserver {
       // allowing the caller to wrap the navigator themselves
       builderWithNav: (context, nav) => InheritedGoRouter(
         goRouter: this,
-        child: navigatorBuilder?.call(context, nav) ?? nav,
+        child: Builder(
+          builder: (context) => navigatorBuilder?.call(context, nav) ?? nav,
+        ),
       ),
     );
   }
@@ -74,8 +76,7 @@ class GoRouter extends ChangeNotifier with NavigatorObserver {
 
   /// Navigate to a URI location w/ optional query parameters, e.g.
   /// /family/f2/person/p1?color=blue
-  void go(String location, {Object? extra}) =>
-      routerDelegate.go(location, extra: extra);
+  void go(String location, {Object? extra}) => routerDelegate.go(location, extra: extra);
 
   /// Navigate to a named route w/ optional parameters, e.g.
   /// name='person', params={'fid': 'f2', 'pid': 'p1'}
@@ -93,8 +94,7 @@ class GoRouter extends ChangeNotifier with NavigatorObserver {
 
   /// Push a URI location onto the page stack w/ optional query parameters, e.g.
   /// /family/f2/person/p1?color=blue
-  void push(String location, {Object? extra}) =>
-      routerDelegate.push(location, extra: extra);
+  void push(String location, {Object? extra}) => routerDelegate.push(location, extra: extra);
 
   /// Push a named route onto the page stack w/ optional parameters, e.g.
   /// name='person', params={'fid': 'f2', 'pid': 'p1'}
@@ -117,34 +117,28 @@ class GoRouter extends ChangeNotifier with NavigatorObserver {
   void refresh() => routerDelegate.refresh();
 
   /// Set the app's URL path strategy (defaults to hash). call before runApp().
-  static void setUrlPathStrategy(UrlPathStrategy strategy) =>
-      setUrlPathStrategyImpl(strategy);
+  static void setUrlPathStrategy(UrlPathStrategy strategy) => setUrlPathStrategyImpl(strategy);
 
   /// Find the current GoRouter in the widget tree.
   static GoRouter of(BuildContext context) {
-    final inherited =
-        context.dependOnInheritedWidgetOfExactType<InheritedGoRouter>();
+    final inherited = context.dependOnInheritedWidgetOfExactType<InheritedGoRouter>();
     assert(inherited != null, 'No GoRouter found in context');
     return inherited!.goRouter;
   }
 
   /// The [Navigator] pushed `route`.
   @override
-  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) =>
-      notifyListeners();
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) => notifyListeners();
 
   /// The [Navigator] popped `route`.
   @override
-  void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) =>
-      notifyListeners();
+  void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) => notifyListeners();
 
   /// The [Navigator] removed `route`.
   @override
-  void didRemove(Route<dynamic> route, Route<dynamic>? previousRoute) =>
-      notifyListeners();
+  void didRemove(Route<dynamic> route, Route<dynamic>? previousRoute) => notifyListeners();
 
   /// The [Navigator] replaced `oldRoute` with `newRoute`.
   @override
-  void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) =>
-      notifyListeners();
+  void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) => notifyListeners();
 }

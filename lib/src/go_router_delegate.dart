@@ -3,9 +3,10 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
-import 'go_route.dart';
+import 'go_routes/go_route.dart';
 import 'go_route_match.dart';
 import 'go_router_state.dart';
+import 'go_routes/go_route_interface.dart';
 import 'logging.dart';
 import 'typedefs.dart';
 
@@ -54,7 +55,7 @@ class GoRouterDelegate extends RouterDelegate<Uri>
   final GoRouterBuilderWithNav builderWithNav;
 
   /// List of top level routes used by the go router delegate.
-  final List<GoRoute> routes;
+  final List<GoRouteInterface> routes;
 
   /// Error page builder for the go router delegate.
   final GoRouterPageBuilder errorPageBuilder;
@@ -85,7 +86,7 @@ class GoRouterDelegate extends RouterDelegate<Uri>
   final _pushCounts = <String, int>{};
 
   void _cacheNamedRoutes(
-    List<GoRoute> routes,
+    List<GoRouteInterface> routes,
     String parentFullpath,
     Map<String, GoRouteMatch> namedFullpaths,
   ) {
@@ -165,8 +166,7 @@ class GoRouterDelegate extends RouterDelegate<Uri>
   }
 
   /// Get the current location, e.g. /family/f2/person/p1
-  String get location =>
-      _addQueryParams(_matches.last.subloc, _matches.last.queryParams);
+  String get location => _addQueryParams(_matches.last.subloc, _matches.last.queryParams);
 
   /// For internal use; visible for testing only.
   @visibleForTesting
@@ -236,8 +236,7 @@ class GoRouterDelegate extends RouterDelegate<Uri>
 
   // note that we're dumping this even if the debugLogDiagnostics flag is clear;
   // exceptions should be loud and proud!
-  void _logError(Object err, StackTrace stack) =>
-      FlutterError.dumpErrorToConsole(
+  void _logError(Object err, StackTrace stack) => FlutterError.dumpErrorToConsole(
         FlutterErrorDetails(
           exception: err is Exception ? err : Exception(err),
           stack: stack,
@@ -424,8 +423,7 @@ class GoRouterDelegate extends RouterDelegate<Uri>
     }
 
     if (matchStacks.length > 1) {
-      final sb = StringBuffer()
-        ..writeln('too many routes for location: $location');
+      final sb = StringBuffer()..writeln('too many routes for location: $location');
 
       for (final stack in matchStacks) {
         sb.writeln('\t${stack.map((m) => m.route.path).join(' => ')}');
@@ -497,7 +495,7 @@ class GoRouterDelegate extends RouterDelegate<Uri>
     required String loc,
     required String restLoc,
     required String parentSubloc,
-    required List<GoRoute> routes,
+    required List<GoRouteInterface> routes,
     required String parentFullpath,
     required Map<String, String> queryParams,
     required Object? extra,
@@ -528,8 +526,7 @@ class GoRouterDelegate extends RouterDelegate<Uri>
       if (route.routes.isEmpty) continue;
 
       // otherwise recurse
-      final childRestLoc =
-          loc.substring(match.subloc.length + (match.subloc == '/' ? 0 : 1));
+      final childRestLoc = loc.substring(match.subloc.length + (match.subloc == '/' ? 0 : 1));
       assert(loc.startsWith(match.subloc));
       assert(restLoc.isNotEmpty);
 
@@ -629,7 +626,8 @@ class GoRouterDelegate extends RouterDelegate<Uri>
       context,
       Navigator(
         restorationScopeId: restorationScopeId,
-        key: _key, // needed to enable Android system Back button
+        key: _key,
+        // needed to enable Android system Back button
         pages: pages,
         observers: observers,
         onPopPage: (route, dynamic result) {
@@ -675,20 +673,25 @@ class GoRouterDelegate extends RouterDelegate<Uri>
   /// loc: /family/f2/person/p1
   /// pages: [ HomePage(), FamilyPage(f2), PersonPage(f2, p1) ]
   @visibleForTesting
-  Iterable<Page<dynamic>> getPages(
+  List<Page<dynamic>> getPages(
     BuildContext context,
     List<GoRouteMatch> matches,
-  ) sync* {
+  ) {
     assert(matches.isNotEmpty);
 
-    var params = <String, String>{};
-    for (final match in matches) {
-      // merge new params to keep params from previously matched paths, e.g.
-      // /family/:fid/person/:pid provides fid and pid to person/:pid
-      params = {...params, ...match.decodedParams};
+    var pages = <Page>[];
+
+    // TODO: check if this is ok, previously bottom route had no idea of top params
+    final params = <String, String>{
+      for (final match in matches) ...match.decodedParams,
+    };
+    for (final match in matches.reversed) {
+      // // merge new params to keep params from previously matched paths, e.g.
+      // // /family/:fid/person/:pid provides fid and pid to person/:pid
+      // params = {...params, ...match.decodedParams};
 
       // get a page from the builder and associate it with a sub-location
-      yield match.route.pageBuilder(
+      pages = match.route.pageStackBuilder(
         context,
         GoRouterState(
           this,
@@ -702,8 +705,11 @@ class GoRouterDelegate extends RouterDelegate<Uri>
           extra: match.extra,
           pageKey: match.pageKey, // push() remaps the page key for uniqueness
         ),
+        pages,
       );
     }
+
+    return pages;
   }
 
   void _outputKnownRoutes() {
@@ -720,7 +726,7 @@ class GoRouterDelegate extends RouterDelegate<Uri>
   }
 
   void _outputFullPathsFor(
-    List<GoRoute> routes,
+    List<GoRouteInterface> routes,
     String parentFullpath,
     int depth,
   ) {
@@ -741,8 +747,7 @@ class GoRouterDelegate extends RouterDelegate<Uri>
   static String _addQueryParams(String loc, Map<String, String> queryParams) {
     final uri = Uri.parse(loc);
     assert(uri.queryParameters.isEmpty);
-    return _canonicalUri(
-        Uri(path: uri.path, queryParameters: queryParams).toString());
+    return _canonicalUri(Uri(path: uri.path, queryParameters: queryParams).toString());
   }
 
   void _safeNotifyListeners() {
@@ -752,8 +757,6 @@ class GoRouterDelegate extends RouterDelegate<Uri>
     // this is a hack to fix the following error:
     // The following assertion was thrown while dispatching notifications for
     // GoRouterDelegate: setState() or markNeedsBuild() called during build.
-    WidgetsBinding.instance == null
-        ? notifyListeners()
-        : scheduleMicrotask(notifyListeners);
+    WidgetsBinding.instance == null ? notifyListeners() : scheduleMicrotask(notifyListeners);
   }
 }
