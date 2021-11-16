@@ -2,7 +2,6 @@ import 'package:collection/collection.dart';
 import 'package:flutter/widgets.dart';
 import 'package:path_to_regexp/path_to_regexp.dart' as p2re;
 
-import '../custom_transition_page.dart';
 import '../go_router_state.dart';
 import '../typedefs.dart';
 

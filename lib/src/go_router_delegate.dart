@@ -3,9 +3,9 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
-import 'go_routes/go_route.dart';
 import 'go_route_match.dart';
 import 'go_router_state.dart';
+import 'go_routes/go_route.dart';
 import 'go_routes/go_route_interface.dart';
 import 'logging.dart';
 import 'typedefs.dart';
@@ -590,6 +590,26 @@ class GoRouterDelegate extends RouterDelegate<Uri>
     return '${parentFullLoc == '/' ? '' : parentFullLoc}/$path';
   }
 
+  /// Called when the top page confirmed that it could pop
+  ///
+  ///
+  /// This should only be used internally
+  void onPop() {
+
+    log2('GoRouterDelegate.onPopPage: matches.last= ${_matches.last}');
+    _matches.remove(_matches.last);
+    if (_matches.isEmpty) {
+      throw Exception(
+        'have popped the last page off of the stack; '
+            'there are no pages left to show',
+      );
+    }
+
+    // this hack allows the browser's address bar to be updated after a
+    // push and pressing the Back button, but it shouldn't be necessary...
+    _safeNotifyListeners();
+  }
+
   Widget _builder(BuildContext context, Iterable<GoRouteMatch> matches) {
     List<Page<dynamic>> pages;
 
@@ -633,18 +653,7 @@ class GoRouterDelegate extends RouterDelegate<Uri>
         onPopPage: (route, dynamic result) {
           if (!route.didPop(result)) return false;
 
-          log2('GoRouterDelegate.onPopPage: matches.last= ${_matches.last}');
-          _matches.remove(_matches.last);
-          if (_matches.isEmpty) {
-            throw Exception(
-              'have popped the last page off of the stack; '
-              'there are no pages left to show',
-            );
-          }
-
-          // this hack allows the browser's address bar to be updated after a
-          // push and pressing the Back button, but it shouldn't be necessary...
-          _safeNotifyListeners();
+          onPop();
 
           return true;
         },

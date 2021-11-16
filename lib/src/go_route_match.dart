@@ -1,9 +1,8 @@
 import 'package:flutter/foundation.dart';
-import 'package:go_router/src/go_routes/go_route_interface.dart';
 import 'package:path_to_regexp/path_to_regexp.dart' as p2re;
 
-import 'go_routes/go_route.dart';
 import 'go_router_delegate.dart';
+import 'go_routes/go_route_interface.dart';
 
 /// Each GoRouteMatch instance represents an instance of a GoRoute for a
 /// specific portion of a location.

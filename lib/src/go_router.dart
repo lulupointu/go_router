@@ -1,9 +1,8 @@
 import 'package:flutter/widgets.dart';
-import 'package:go_router/src/go_routes/go_route_interface.dart';
 
-import 'go_routes/go_route.dart';
 import 'go_route_information_parser.dart';
 import 'go_router_delegate.dart';
+import 'go_routes/go_route_interface.dart';
 import 'inherited_go_router.dart';
 import 'path_strategy_nonweb.dart' if (dart.library.html) 'path_strategy_web.dart';
 import 'typedefs.dart';

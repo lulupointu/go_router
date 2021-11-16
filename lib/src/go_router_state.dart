@@ -6,7 +6,7 @@ import 'go_router_delegate.dart';
 class GoRouterState {
   /// Default constructor for creating route state during routing.
   GoRouterState(
-    this._delegate, {
+    this.delegate, {
     required this.location,
     required this.subloc,
     required this.name,
@@ -25,7 +25,8 @@ class GoRouterState {
                     : subloc),
         assert((path ?? '').isEmpty == (fullpath ?? '').isEmpty);
 
-  final GoRouterDelegate _delegate;
+  /// TODO: Check if that's ok to be public
+  final GoRouterDelegate delegate;
 
   /// The full location of the route, e.g. /family/f2/person/p1
   final String location;
@@ -64,5 +65,5 @@ class GoRouterState {
     Map<String, String> params = const {},
     Map<String, String> queryParams = const {},
   }) =>
-      _delegate.namedLocation(name, params: params, queryParams: queryParams);
+      delegate.namedLocation(name, params: params, queryParams: queryParams);
 }
