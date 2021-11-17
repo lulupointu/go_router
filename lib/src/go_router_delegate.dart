@@ -14,7 +14,7 @@ import 'typedefs.dart';
 class GoRouterDelegate extends RouterDelegate<Uri>
     with
         PopNavigatorRouterDelegateMixin<Uri>,
-        // ignore: prefer_mixin
+    // ignore: prefer_mixin
         ChangeNotifier {
   /// Constructor for GoRouter's implementation of the
   /// RouterDelegate base class.
@@ -85,11 +85,22 @@ class GoRouterDelegate extends RouterDelegate<Uri>
   final _namedMatches = <String, GoRouteMatch>{};
   final _pushCounts = <String, int>{};
 
-  void _cacheNamedRoutes(
-    List<GoRouteInterface> routes,
-    String parentFullpath,
-    Map<String, GoRouteMatch> namedFullpaths,
-  ) {
+  /// We use an overlay so that things like bottom navigation bar can be build
+  /// inside the navigatorBuilder
+  ///
+  ///
+  /// We don't use late and use the null value to know if this [OverlayEntry]
+  /// as been created or not. It will be created during the first [build]
+  OverlayEntry? _overlayEntry;
+  final _overlayKey = GlobalKey<OverlayState>();
+  /// We need to store the pages here otherwise the [_overlayEntry] is not
+  /// updated
+  List<Page<dynamic>> _pages = [];
+
+
+  void _cacheNamedRoutes(List<GoRouteInterface> routes,
+      String parentFullpath,
+      Map<String, GoRouteMatch> namedFullpaths,) {
     for (final route in routes) {
       final fullpath = fullLocFor(parentFullpath, route.path);
 
@@ -122,8 +133,7 @@ class GoRouterDelegate extends RouterDelegate<Uri>
 
   /// Get a location from route name and parameters.
   /// This is useful for redirecting to a named location.
-  String namedLocation(
-    String name, {
+  String namedLocation(String name, {
     required Map<String, String> params,
     required Map<String, String> queryParams,
   }) {
@@ -236,7 +246,8 @@ class GoRouterDelegate extends RouterDelegate<Uri>
 
   // note that we're dumping this even if the debugLogDiagnostics flag is clear;
   // exceptions should be loud and proud!
-  void _logError(Object err, StackTrace stack) => FlutterError.dumpErrorToConsole(
+  void _logError(Object err, StackTrace stack) =>
+      FlutterError.dumpErrorToConsole(
         FlutterErrorDetails(
           exception: err is Exception ? err : Exception(err),
           stack: stack,
@@ -279,8 +290,7 @@ class GoRouterDelegate extends RouterDelegate<Uri>
     _matches.add(match);
   }
 
-  List<GoRouteMatch> _getLocRouteMatchesWithRedirects(
-    String location, {
+  List<GoRouteMatch> _getLocRouteMatchesWithRedirects(String location, {
     required Object? extra,
   }) {
     // start redirecting from the initial location
@@ -379,21 +389,22 @@ class GoRouterDelegate extends RouterDelegate<Uri>
           extra: null,
           route: GoRoute(
             path: location,
-            pageBuilder: (context, state) => errorPageBuilder(
-              context,
-              GoRouterState(
-                this,
-                location: state.location,
-                subloc: state.subloc,
-                name: state.name,
-                path: state.path,
-                error: err is Exception ? err : Exception(err),
-                fullpath: state.path,
-                params: state.params,
-                queryParams: state.queryParams,
-                extra: state.extra,
-              ),
-            ),
+            pageBuilder: (context, state) =>
+                errorPageBuilder(
+                  context,
+                  GoRouterState(
+                    this,
+                    location: state.location,
+                    subloc: state.subloc,
+                    name: state.name,
+                    path: state.path,
+                    error: err is Exception ? err : Exception(err),
+                    fullpath: state.path,
+                    params: state.params,
+                    queryParams: state.queryParams,
+                    extra: state.extra,
+                  ),
+                ),
           ),
         ),
       ];
@@ -403,8 +414,7 @@ class GoRouterDelegate extends RouterDelegate<Uri>
     return matches;
   }
 
-  List<GoRouteMatch> _getLocRouteMatches(
-    String location, {
+  List<GoRouteMatch> _getLocRouteMatches(String location, {
     Object? extra,
   }) {
     final uri = Uri.parse(location);
@@ -423,7 +433,8 @@ class GoRouterDelegate extends RouterDelegate<Uri>
     }
 
     if (matchStacks.length > 1) {
-      final sb = StringBuffer()..writeln('too many routes for location: $location');
+      final sb = StringBuffer()
+        ..writeln('too many routes for location: $location');
 
       for (final stack in matchStacks) {
         sb.writeln('\t${stack.map((m) => m.route.path).join(' => ')}');
@@ -550,8 +561,7 @@ class GoRouterDelegate extends RouterDelegate<Uri>
     }
   }
 
-  GoRouteMatch? _getNameRouteMatch(
-    String name, {
+  GoRouteMatch? _getNameRouteMatch(String name, {
     Map<String, String> params = const {},
     Map<String, String> queryParams = const {},
     Object? extra,
@@ -560,13 +570,13 @@ class GoRouterDelegate extends RouterDelegate<Uri>
     return partialMatch == null
         ? null
         : GoRouteMatch.matchNamed(
-            name: name,
-            route: partialMatch.route,
-            fullpath: partialMatch.fullpath,
-            params: params,
-            queryParams: queryParams,
-            extra: extra,
-          );
+      name: name,
+      route: partialMatch.route,
+      fullpath: partialMatch.fullpath,
+      params: params,
+      queryParams: queryParams,
+      extra: extra,
+    );
   }
 
   // e.g.
@@ -595,7 +605,6 @@ class GoRouterDelegate extends RouterDelegate<Uri>
   ///
   /// This should only be used internally
   void onPop() {
-
     log2('GoRouterDelegate.onPopPage: matches.last= ${_matches.last}');
     _matches.remove(_matches.last);
     if (_matches.isEmpty) {
@@ -611,11 +620,10 @@ class GoRouterDelegate extends RouterDelegate<Uri>
   }
 
   Widget _builder(BuildContext context, Iterable<GoRouteMatch> matches) {
-    List<Page<dynamic>> pages;
 
     try {
       // build the stack of pages
-      pages = getPages(context, matches.toList()).toList();
+      _pages = getPages(context, matches.toList()).toList();
 
       // note that we need to catch it this way to get all the info, e.g. the
       // file/line info for an error in an inline function impl, e.g. an inline
@@ -626,7 +634,7 @@ class GoRouterDelegate extends RouterDelegate<Uri>
 
       // if there's an error, show an error page
       final uri = Uri.parse(location);
-      pages = [
+      _pages = [
         errorPageBuilder(
           context,
           GoRouterState(
@@ -642,22 +650,32 @@ class GoRouterDelegate extends RouterDelegate<Uri>
     }
 
     // wrap the returned Navigator to enable GoRouter.of(context).go()
-    return builderWithNav(
-      context,
-      Navigator(
-        restorationScopeId: restorationScopeId,
-        key: _key,
-        // needed to enable Android system Back button
-        pages: pages,
-        observers: observers,
-        onPopPage: (route, dynamic result) {
-          if (!route.didPop(result)) return false;
+    // We use an overlay so that things like bottom navigation bar can be build
+    // inside the navigatorBuilder
+    _overlayEntry ??= OverlayEntry(
+      builder: (context) =>
+          builderWithNav(
+            context,
+            Navigator(
+              restorationScopeId: restorationScopeId,
+              key: _key,
+              // needed to enable Android system Back button
+              pages: _pages,
+              observers: observers,
+              onPopPage: (route, dynamic result) {
+                if (!route.didPop(result)) return false;
 
-          onPop();
+                onPop();
 
-          return true;
-        },
-      ),
+                return true;
+              },
+            ),
+          ),
+    );
+    _overlayEntry!.markNeedsBuild();
+    return Overlay(
+      key:_overlayKey,
+      initialEntries: [_overlayEntry!],
     );
   }
 
@@ -682,10 +700,8 @@ class GoRouterDelegate extends RouterDelegate<Uri>
   /// loc: /family/f2/person/p1
   /// pages: [ HomePage(), FamilyPage(f2), PersonPage(f2, p1) ]
   @visibleForTesting
-  List<Page<dynamic>> getPages(
-    BuildContext context,
-    List<GoRouteMatch> matches,
-  ) {
+  List<Page<dynamic>> getPages(BuildContext context,
+      List<GoRouteMatch> matches,) {
     assert(matches.isNotEmpty);
 
     var pages = <Page>[];
@@ -734,11 +750,9 @@ class GoRouterDelegate extends RouterDelegate<Uri>
     }
   }
 
-  void _outputFullPathsFor(
-    List<GoRouteInterface> routes,
-    String parentFullpath,
-    int depth,
-  ) {
+  void _outputFullPathsFor(List<GoRouteInterface> routes,
+      String parentFullpath,
+      int depth,) {
     assert(debugLogDiagnostics);
 
     for (final route in routes) {

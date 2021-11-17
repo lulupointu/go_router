@@ -18,36 +18,11 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   /// A controller on [GoTabbedRoute], indicating the current index would be
   /// useful
-  TabItem get _currentTab {
-    if (tabbedRouteController.currentIndex == 0) {
-      return TabItem.red;
-    } else if (tabbedRouteController.currentIndex == 1) {
-      return TabItem.green;
-    } else {
-      return TabItem.blue;
-    }
-  }
-
   final GoTabbedRouteController tabbedRouteController = GoTabbedRouteController(
     initialLocationBuilder: (context, index) => ['/red', '/green', '/blue'][index],
   );
 
-  // This is bad, navigatorKey would be much easier, people are lost when it
-  // comes to context (even more than keys)
-  late BuildContext nestedNavigatorContext;
-
-  // TODO: navigatorKey to make this possible without nestedNavigatorContext
-  void _selectTab(BuildContext context, int index) {
-    final activeIndex = tabbedRouteController.currentIndex;
-    if (index == activeIndex) {
-      // pop to first route
-      Navigator.of(nestedNavigatorContext).popUntil(
-        (route) => route.isFirst,
-      );
-    } else {
-      tabbedRouteController.go(index);
-    }
-  }
+  void _selectTab(BuildContext context, int index) => tabbedRouteController.go(index);
 
   @override
   Widget build(BuildContext context) => MaterialApp.router(
@@ -58,20 +33,13 @@ class _MyAppState extends State<MyApp> {
 
   late final _router = GoRouter(
     initialLocation: '/red',
-    navigatorBuilder: (context, child) => Navigator(
-      pages: [
-        MaterialPage<void>(
-          child: Scaffold(
-            body: child,
-            bottomNavigationBar: BottomNavigation(
-              currentTab: _currentTab,
-              onSelectTab: _selectTab,
-            ),
-          ),
+    navigatorBuilder: (context, child) => Scaffold(
+        body: child,
+        bottomNavigationBar: BottomNavigation(
+          currentTabIndex: tabbedRouteController.currentIndex,
+          onSelectTabIndex: _selectTab,
         ),
-      ],
-      onPopPage: (a, dynamic b) => a.didPop(b),
-    ),
+      ),
     routes: [
       GoTabbedRoute(
         path: '/',
@@ -93,16 +61,14 @@ class _MyAppState extends State<MyApp> {
           path: tabName[tabItem]!,
           pageBuilder: (context, state) => MaterialPage<void>(
                 key: state.pageKey,
-                child: Builder(builder: (context) {
-                  nestedNavigatorContext = context;
-                  return ColorsListScreen(
-                    color: activeTabColor[tabItem]!,
-                    title: tabName[tabItem]!,
-                    onPush: (materialIndex) {
-                      context.go('/${tabName[tabItem]!}/details_$materialIndex');
-                    },
-                  );
-                }),
+                child: Builder(
+                    builder: (context) => ColorsListScreen(
+                          color: activeTabColor[tabItem]!,
+                          title: tabName[tabItem]!,
+                          onPush: (materialIndex) {
+                            context.go('/${tabName[tabItem]!}/details_$materialIndex');
+                          },
+                        )),
               ),
           routes: [
             GoRoute(
@@ -121,13 +87,23 @@ class _MyAppState extends State<MyApp> {
 
 class BottomNavigation extends StatelessWidget {
   const BottomNavigation({
-    required this.currentTab,
-    required this.onSelectTab,
+    required this.currentTabIndex,
+    required this.onSelectTabIndex,
     Key? key,
   }) : super(key: key);
 
-  final TabItem currentTab;
-  final void Function(BuildContext context, int index) onSelectTab;
+  TabItem get _currentTab {
+    if (currentTabIndex == 0) {
+      return TabItem.red;
+    } else if (currentTabIndex == 1) {
+      return TabItem.green;
+    } else {
+      return TabItem.blue;
+    }
+  }
+
+  final int currentTabIndex;
+  final void Function(BuildContext context, int index) onSelectTabIndex;
 
   @override
   Widget build(BuildContext context) => BottomNavigationBar(
@@ -137,9 +113,9 @@ class BottomNavigation extends StatelessWidget {
           _buildItem(TabItem.green),
           _buildItem(TabItem.blue),
         ],
-        onTap: (index) => onSelectTab(context, index),
-        currentIndex: currentTab.index,
-        selectedItemColor: activeTabColor[currentTab],
+        onTap: (index) => onSelectTabIndex(context, index),
+        currentIndex: currentTabIndex,
+        selectedItemColor: activeTabColor[_currentTab],
       );
 
   BottomNavigationBarItem _buildItem(TabItem tabItem) => BottomNavigationBarItem(
@@ -151,7 +127,7 @@ class BottomNavigation extends StatelessWidget {
       );
 
   Color _colorTabMatching(TabItem item) =>
-      currentTab == item ? activeTabColor[item]! : Colors.grey;
+      _currentTab == item ? activeTabColor[item]! : Colors.grey;
 }
 
 class ColorDetailScreen extends StatelessWidget {
