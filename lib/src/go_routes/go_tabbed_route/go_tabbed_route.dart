@@ -14,6 +14,7 @@ class GoTabbedRoute extends GoRouteInterface {
     required List<GoRoute> routes,
     required this.pageBuilder,
     this.controller,
+    this.navigatorBuilder,
     this.alignment = AlignmentDirectional.topStart,
     this.textDirection,
     this.fit = StackFit.loose,
@@ -43,6 +44,23 @@ class GoTabbedRoute extends GoRouteInterface {
     GoRouterState state,
     Widget child,
   ) pageBuilder;
+
+  /// A builder to create an object around the navigators created by this
+  /// widget
+  ///
+  ///
+  /// Here is an example:
+  ///   GoTabbedRoute(
+  ///     ...,
+  ///     navigatorBuilder: (context, child) => Scaffold(
+  ///       body: child,
+  ///       bottomNavigationBar: BottomNavigation(
+  ///       currentTabIndex: tabbedRouteController.currentIndex,
+  ///       onSelectTabIndex: _selectTab,
+  ///       ),
+  ///     ),
+  ///   ),
+  Widget Function(BuildContext context, Widget child)? navigatorBuilder;
 
   /// How to align the children in the stack
   ///
@@ -78,7 +96,7 @@ class GoTabbedRoute extends GoRouteInterface {
   ///
   /// TODO: add other navigator properties?
   Widget _buildNavigator(
-  BuildContext context,
+    BuildContext context,
     GoRouterState state,
     List<Page> pages,
   ) {
@@ -97,7 +115,7 @@ class GoTabbedRoute extends GoRouteInterface {
     );
 
     controller?.currentIndex = currentIndex;
-    return LazyIndexedStack(
+    final child = LazyIndexedStack(
       itemCount: routes.length,
       currentIndex: currentIndex,
       alignment: alignment,
@@ -106,5 +124,6 @@ class GoTabbedRoute extends GoRouteInterface {
       pages: pages,
       onPopped: () => state.delegate.onPop(),
     );
+    return navigatorBuilder?.call(context, child) ?? child;
   }
 }

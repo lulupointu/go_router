@@ -22,7 +22,7 @@ class _MyAppState extends State<MyApp> {
     initialLocationBuilder: (context, index) => ['/red', '/green', '/blue'][index],
   );
 
-  void _selectTab(BuildContext context, int index) => tabbedRouteController.go(index);
+  void _selectTabIndex(BuildContext context, int index) => tabbedRouteController.go(index);
 
   @override
   Widget build(BuildContext context) => MaterialApp.router(
@@ -33,13 +33,6 @@ class _MyAppState extends State<MyApp> {
 
   late final _router = GoRouter(
     initialLocation: '/red',
-    navigatorBuilder: (context, child) => Scaffold(
-        body: child,
-        bottomNavigationBar: BottomNavigation(
-          currentTabIndex: tabbedRouteController.currentIndex,
-          onSelectTabIndex: _selectTab,
-        ),
-      ),
     routes: [
       GoTabbedRoute(
         path: '/',
@@ -48,6 +41,13 @@ class _MyAppState extends State<MyApp> {
         pageBuilder: (context, state, child) => MaterialPage<void>(
           key: state.pageKey,
           child: child,
+        ),
+        navigatorBuilder: (context, child) => Scaffold(
+          body: child,
+          bottomNavigationBar: BottomNavigation(
+            currentTabIndex: tabbedRouteController.currentIndex,
+            onSelectTabIndex: _selectTabIndex,
+          ),
         ),
       ),
     ],
